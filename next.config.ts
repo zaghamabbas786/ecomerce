@@ -17,6 +17,14 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  async rewrites() {
+    return [
+      {
+        source: '/favicon.ico',
+        destination: '/api/favicon.ico',
+      },
+    ];
+  },
   experimental: {
     serverActions: {
       bodySizeLimit: '10mb',
