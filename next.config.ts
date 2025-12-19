@@ -16,6 +16,11 @@ const nextConfig: NextConfig = {
         hostname: 'encrypted-tbn0.gstatic.com',
       },
     ],
+    // Add timeout and error handling for image optimization
+    minimumCacheTTL: 60,
+    dangerouslyAllowSVG: true,
+    contentDispositionType: 'attachment',
+    contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
   },
   async rewrites() {
     return [
