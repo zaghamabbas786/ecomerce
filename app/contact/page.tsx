@@ -7,7 +7,7 @@ import { Mail, Phone, MapPin } from 'lucide-react';
 
 export const metadata = {
   title: 'Contact Us',
-  description: 'Get in touch with Fashion Store. We're here to help with any questions or concerns.',
+  description: 'Get in touch with Fashion Store. We are here to help with any questions or concerns.',
 };
 
 export default function ContactPage() {
