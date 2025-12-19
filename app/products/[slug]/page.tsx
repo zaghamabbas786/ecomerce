@@ -13,7 +13,7 @@ export async function generateMetadata({ params }: ProductPageProps) {
   const { slug } = await params;
   const result = await getProductBySlug(slug);
 
-  if (!result.product) {
+  if (!('product' in result) || !result.product) {
     return { title: 'Product Not Found' };
   }
 
@@ -27,7 +27,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
   const { slug } = await params;
   const result = await getProductBySlug(slug);
 
-  if (!result.product) {
+  if (!('product' in result) || !result.product) {
     notFound();
   }
 
@@ -38,7 +38,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
     category: product.category,
     limit: 4,
   });
-  const relatedProducts = (relatedResult.products || []).filter(
+  const relatedProducts = (('products' in relatedResult ? relatedResult.products : null) || []).filter(
     (p: any) => p._id !== product._id
   );
 

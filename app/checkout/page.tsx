@@ -9,6 +9,8 @@ export const metadata = {
   title: 'Checkout',
 };
 
+export const dynamic = 'force-dynamic';
+
 export default async function CheckoutPage() {
   const cart = await getCart();
 

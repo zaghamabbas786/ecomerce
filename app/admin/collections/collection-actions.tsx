@@ -31,7 +31,7 @@ export function CollectionActions({ id }: CollectionActionsProps) {
     const result = await deleteCollection(id);
     setLoading(false);
 
-    if (result.success) {
+    if ('success' in result && result.success) {
       toast({
         title: 'Collection deleted',
         description: 'Collection has been deleted successfully',
@@ -41,7 +41,7 @@ export function CollectionActions({ id }: CollectionActionsProps) {
     } else {
       toast({
         title: 'Error',
-        description: result.error || 'Failed to delete collection',
+        description: ('error' in result ? result.error : undefined) || 'Failed to delete collection',
         variant: 'destructive',
       });
     }

@@ -20,9 +20,9 @@ export default async function HomePage() {
       getCollections(true),
     ]);
 
-  const hero = heroResult.heroSection;
-  const featuredProducts = featuredProductsResult.products || [];
-  const collections = collectionsResult.collections || [];
+  const hero = ('heroSection' in heroResult ? heroResult.heroSection : null);
+  const featuredProducts = ('products' in featuredProductsResult ? featuredProductsResult.products : null) || [];
+  const collections = ('collections' in collectionsResult ? collectionsResult.collections : null) || [];
 
   return (
     <div>

@@ -20,7 +20,7 @@ export const metadata = {
 
 export default async function AdminProductsPage() {
   const result = await getProducts({ limit: 100 });
-  const products = result.products || [];
+  const products = ('products' in result ? result.products : null) || [];
 
   return (
     <div>

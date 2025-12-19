@@ -19,7 +19,7 @@ export const metadata = {
 
 export default async function AdminCollectionsPage() {
   const result = await getCollections();
-  const collections = result.collections || [];
+  const collections = ('collections' in result ? result.collections : null) || [];
 
   return (
     <div>

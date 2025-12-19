@@ -83,7 +83,7 @@ export function ProductForm({ product }: ProductFormProps) {
 
     setLoading(false);
 
-    if (result.success) {
+    if ('success' in result && result.success) {
       toast({
         title: 'Success',
         description: `Product ${product ? 'updated' : 'created'} successfully`,
@@ -92,7 +92,7 @@ export function ProductForm({ product }: ProductFormProps) {
     } else {
       toast({
         title: 'Error',
-        description: result.error || 'Something went wrong',
+        description: ('error' in result ? result.error : undefined) || 'Something went wrong',
         variant: 'destructive',
       });
     }

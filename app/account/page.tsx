@@ -7,10 +7,12 @@ export const metadata = {
   title: 'My Account',
 };
 
+export const dynamic = 'force-dynamic';
+
 export default async function AccountPage() {
   const result = await getProfile();
 
-  if (result.error) {
+  if ('error' in result) {
     redirect('/auth/signin');
   }
 

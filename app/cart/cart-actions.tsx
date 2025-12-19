@@ -37,12 +37,12 @@ export function CartActions({
     const result = await updateCartItemAction(productId, size, color, newQuantity);
     setLoading(false);
 
-    if (result.success) {
+    if ('success' in result && result.success) {
       router.refresh();
     } else {
       toast({
         title: 'Error',
-        description: result.error || 'Failed to update quantity',
+        description: ('error' in result ? result.error : undefined) || 'Failed to update quantity',
         variant: 'destructive',
       });
     }
@@ -53,7 +53,7 @@ export function CartActions({
     const result = await removeFromCartAction(productId, size, color);
     setLoading(false);
 
-    if (result.success) {
+    if ('success' in result && result.success) {
       toast({
         title: 'Removed from cart',
         description: 'Item has been removed from your cart',
@@ -62,7 +62,7 @@ export function CartActions({
     } else {
       toast({
         title: 'Error',
-        description: result.error || 'Failed to remove item',
+        description: ('error' in result ? result.error : undefined) || 'Failed to remove item',
         variant: 'destructive',
       });
     }

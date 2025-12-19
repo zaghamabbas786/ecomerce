@@ -19,14 +19,14 @@ export default async function OrderDetailPage({ params }: OrderDetailPageProps) 
   const { id } = await params;
   const result = await getOrderById(id);
 
-  if (result.error) {
+  if ('error' in result) {
     if (result.error === 'Unauthorized') {
       redirect('/auth/signin');
     }
     notFound();
   }
 
-  const order = result.order!;
+  const order = result.order;
 
   return (
     <div className="container mx-auto px-4 py-8">

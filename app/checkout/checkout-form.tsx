@@ -58,7 +58,7 @@ export function CheckoutForm({ cart, totals }: CheckoutFormProps) {
 
     setLoading(false);
 
-    if (result.success && result.order) {
+    if ('success' in result && result.success && 'order' in result && result.order) {
       // Clear cart
       await clearCartAction();
 
@@ -71,7 +71,7 @@ export function CheckoutForm({ cart, totals }: CheckoutFormProps) {
     } else {
       toast({
         title: 'Error',
-        description: result.error || 'Failed to place order',
+        description: ('error' in result ? result.error : undefined) || 'Failed to place order',
         variant: 'destructive',
       });
     }

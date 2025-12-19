@@ -17,7 +17,7 @@ export const metadata = {
 
 export default async function AdminOrdersPage() {
   const result = await getOrders({ limit: 50 });
-  const orders = result.orders || [];
+  const orders = ('orders' in result ? result.orders : null) || [];
 
   return (
     <div>

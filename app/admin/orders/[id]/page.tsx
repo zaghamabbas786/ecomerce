@@ -24,7 +24,7 @@ export default async function AdminOrderDetailPage({
   // For admin, we need to bypass auth check, so we'll connect directly
   const result = await getOrderById(id);
 
-  if (!result.order) {
+  if (!('order' in result) || !result.order) {
     notFound();
   }
 

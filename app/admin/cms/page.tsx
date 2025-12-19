@@ -13,8 +13,8 @@ export default async function AdminCMSPage() {
     getAllBanners(),
   ]);
 
-  const hero = heroResult.heroSection;
-  const banners = bannersResult.banners || [];
+  const hero = 'heroSection' in heroResult ? heroResult.heroSection : null;
+  const banners = 'banners' in bannersResult ? bannersResult.banners || [] : [];
 
   return (
     <div>

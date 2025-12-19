@@ -27,7 +27,7 @@ export function RegisterForm() {
 
     setLoading(false);
 
-    if (result.success) {
+    if ('success' in result && result.success) {
       toast({
         title: 'Success',
         description: 'Account created successfully. Please sign in.',
@@ -36,7 +36,7 @@ export function RegisterForm() {
     } else {
       toast({
         title: 'Error',
-        description: result.error || 'Failed to create account',
+        description: ('error' in result ? result.error : undefined) || 'Failed to create account',
         variant: 'destructive',
       });
     }

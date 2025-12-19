@@ -52,7 +52,7 @@ export function AddToCartForm({ product }: AddToCartFormProps) {
 
     setLoading(false);
 
-    if (result.success) {
+    if ('success' in result && result.success) {
       toast({
         title: 'Added to cart',
         description: `${product.title} has been added to your cart.`,
@@ -61,7 +61,7 @@ export function AddToCartForm({ product }: AddToCartFormProps) {
     } else {
       toast({
         title: 'Error',
-        description: result.error || 'Failed to add to cart',
+        description: ('error' in result ? result.error : undefined) || 'Failed to add to cart',
         variant: 'destructive',
       });
     }

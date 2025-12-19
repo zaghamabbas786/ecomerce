@@ -26,7 +26,7 @@ export function SignInForm() {
 
     setLoading(false);
 
-    if (result.success) {
+    if ('success' in result && result.success) {
       toast({
         title: 'Success',
         description: 'You have been signed in successfully',
@@ -36,7 +36,7 @@ export function SignInForm() {
     } else {
       toast({
         title: 'Error',
-        description: result.error || 'Failed to sign in',
+        description: ('error' in result ? result.error : undefined) || 'Failed to sign in',
         variant: 'destructive',
       });
     }

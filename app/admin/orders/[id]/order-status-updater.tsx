@@ -37,7 +37,7 @@ export function OrderStatusUpdater({
     const result = await updateOrderStatus(orderId, newStatus as any);
     setLoading(false);
 
-    if (result.success) {
+    if ('success' in result && result.success) {
       toast({
         title: 'Status updated',
         description: 'Order status has been updated successfully',
@@ -46,7 +46,7 @@ export function OrderStatusUpdater({
     } else {
       toast({
         title: 'Error',
-        description: result.error || 'Failed to update status',
+        description: ('error' in result ? result.error : undefined) || 'Failed to update status',
         variant: 'destructive',
       });
     }

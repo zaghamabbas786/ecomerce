@@ -31,7 +31,7 @@ export function ProfileForm({ user }: ProfileFormProps) {
 
     setLoading(false);
 
-    if (result.success) {
+    if ('success' in result && result.success) {
       toast({
         title: 'Profile updated',
         description: 'Your profile has been updated successfully',
@@ -40,7 +40,7 @@ export function ProfileForm({ user }: ProfileFormProps) {
     } else {
       toast({
         title: 'Error',
-        description: result.error || 'Failed to update profile',
+        description: ('error' in result ? result.error : undefined) || 'Failed to update profile',
         variant: 'destructive',
       });
     }

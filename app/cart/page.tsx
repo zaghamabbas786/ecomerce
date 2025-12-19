@@ -11,6 +11,8 @@ export const metadata = {
   title: 'Shopping Cart',
 };
 
+export const dynamic = 'force-dynamic';
+
 export default async function CartPage() {
   const cart = await getCart();
   const totals = calculateCartTotal(cart);

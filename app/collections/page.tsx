@@ -8,7 +8,7 @@ export const metadata = {
 
 export default async function CollectionsPage() {
   const result = await getCollections();
-  const collections = result.collections || [];
+  const collections = ('collections' in result ? result.collections : null) || [];
 
   return (
     <div className="container mx-auto px-4 py-8">

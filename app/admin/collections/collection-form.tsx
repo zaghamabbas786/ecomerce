@@ -40,7 +40,7 @@ export function CollectionForm({ collection }: CollectionFormProps) {
 
     setLoading(false);
 
-    if (result.success) {
+    if ('success' in result && result.success) {
       toast({
         title: 'Success',
         description: `Collection ${collection ? 'updated' : 'created'} successfully`,
@@ -49,7 +49,7 @@ export function CollectionForm({ collection }: CollectionFormProps) {
     } else {
       toast({
         title: 'Error',
-        description: result.error || 'Something went wrong',
+        description: ('error' in result ? result.error : undefined) || 'Something went wrong',
         variant: 'destructive',
       });
     }

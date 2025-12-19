@@ -36,7 +36,7 @@ export function SettingsForm({ settings }: SettingsFormProps) {
 
     setLoading(false);
 
-    if (result.success) {
+    if ('success' in result && result.success) {
       toast({
         title: 'Settings updated',
         description: 'Site settings have been updated successfully',
@@ -45,7 +45,7 @@ export function SettingsForm({ settings }: SettingsFormProps) {
     } else {
       toast({
         title: 'Error',
-        description: result.error || 'Failed to update settings',
+        description: ('error' in result ? result.error : undefined) || 'Failed to update settings',
         variant: 'destructive',
       });
     }

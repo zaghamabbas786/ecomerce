@@ -34,7 +34,7 @@ export function HeroSectionForm({ hero }: HeroSectionFormProps) {
 
     setLoading(false);
 
-    if (result.success) {
+    if ('success' in result && result.success) {
       toast({
         title: 'Hero section updated',
         description: 'Homepage hero section has been updated successfully',
@@ -43,7 +43,7 @@ export function HeroSectionForm({ hero }: HeroSectionFormProps) {
     } else {
       toast({
         title: 'Error',
-        description: result.error || 'Failed to update hero section',
+        description: ('error' in result ? result.error : undefined) || 'Failed to update hero section',
         variant: 'destructive',
       });
     }

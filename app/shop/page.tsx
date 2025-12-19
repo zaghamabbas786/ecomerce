@@ -10,6 +10,8 @@ export const metadata = {
   description: 'Browse our collection of trendy clothing and accessories',
 };
 
+export const dynamic = 'force-dynamic';
+
 interface ShopPageProps {
   searchParams: Promise<{
     page?: string;
@@ -46,8 +48,8 @@ export default async function ShopPage({ searchParams }: ShopPageProps) {
     search,
   });
 
-  const products = result.products || [];
-  const totalPages = result.pages || 1;
+  const products = ('products' in result ? result.products : null) || [];
+  const totalPages = ('pages' in result ? result.pages : null) || 1;
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -71,7 +73,7 @@ export default async function ShopPage({ searchParams }: ShopPageProps) {
             <>
               <div className="mb-4 text-sm text-muted-foreground">
                 Showing {(page - 1) * 12 + 1}-
-                {Math.min(page * 12, result.total || 0)} of {result.total || 0}{' '}
+                {Math.min(page * 12, ('total' in result ? result.total : null) || 0)} of {('total' in result ? result.total : null) || 0}{' '}
                 products
               </div>
 

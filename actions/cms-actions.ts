@@ -195,7 +195,9 @@ export async function getSiteSettings() {
 
     if (!settings) {
       // Create default settings
-      settings = await SiteSettings.create({ siteName: 'Fashion Store' });
+      await SiteSettings.create({ siteName: 'Fashion Store' });
+      // Refetch with lean() to maintain consistent typing
+      settings = await SiteSettings.findOne().lean();
     }
 
     return { settings: JSON.parse(JSON.stringify(settings)) };

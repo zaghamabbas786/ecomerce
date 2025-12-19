@@ -30,7 +30,7 @@ export function DeleteProductButton({ id }: DeleteProductButtonProps) {
     const result = await deleteProduct(id);
     setLoading(false);
 
-    if (result.success) {
+    if ('success' in result && result.success) {
       toast({
         title: 'Product deleted',
         description: 'Product has been deleted successfully',
@@ -40,7 +40,7 @@ export function DeleteProductButton({ id }: DeleteProductButtonProps) {
     } else {
       toast({
         title: 'Error',
-        description: result.error || 'Failed to delete product',
+        description: ('error' in result ? result.error : undefined) || 'Failed to delete product',
         variant: 'destructive',
       });
     }

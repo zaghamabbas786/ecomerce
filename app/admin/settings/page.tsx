@@ -8,7 +8,7 @@ export const metadata = {
 
 export default async function AdminSettingsPage() {
   const result = await getSiteSettings();
-  const settings = result.settings;
+  const settings = 'settings' in result ? result.settings : null;
 
   return (
     <div>

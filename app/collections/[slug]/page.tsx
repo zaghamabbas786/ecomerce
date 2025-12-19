@@ -10,11 +10,13 @@ interface CollectionPageProps {
   searchParams: Promise<{ page?: string }>;
 }
 
+export const dynamic = 'force-dynamic';
+
 export async function generateMetadata({ params }: CollectionPageProps) {
   const { slug } = await params;
   const result = await getCollectionBySlug(slug);
 
-  if (!result.collection) {
+  if (!('collection' in result) || !result.collection) {
     return { title: 'Collection Not Found' };
   }
 
@@ -34,7 +36,7 @@ export default async function CollectionPage({
 
   const collectionResult = await getCollectionBySlug(slug);
 
-  if (!collectionResult.collection) {
+  if (!('collection' in collectionResult) || !collectionResult.collection) {
     notFound();
   }
 
@@ -46,8 +48,8 @@ export default async function CollectionPage({
     limit: 12,
   });
 
-  const products = productsResult.products || [];
-  const totalPages = productsResult.pages || 1;
+  const products = ('products' in productsResult ? productsResult.products : null) || [];
+  const totalPages = ('pages' in productsResult ? productsResult.pages : null) || 1;
 
   return (
     <div className="container mx-auto px-4 py-8">

@@ -10,6 +10,8 @@ export const metadata = {
   title: 'Search',
 };
 
+export const dynamic = 'force-dynamic';
+
 interface SearchPageProps {
   searchParams: Promise<{
     q?: string;
@@ -30,8 +32,8 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
       })
     : { products: [], total: 0, pages: 0 };
 
-  const products = result.products || [];
-  const totalPages = result.pages || 1;
+  const products = ('products' in result ? result.products : null) || [];
+  const totalPages = ('pages' in result ? result.pages : null) || 1;
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -52,7 +54,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
           <>
             <div className="mb-6">
               <p className="text-muted-foreground">
-                Found {result.total} results for &quot;{query}&quot;
+                Found {('total' in result ? result.total : null) || 0} results for &quot;{query}&quot;
               </p>
             </div>
 

@@ -16,7 +16,7 @@ export default async function EditCollectionPage({
   const { id } = await params;
   const result = await getCollectionById(id);
 
-  if (!result.collection) {
+  if (!('collection' in result) || !result.collection) {
     notFound();
   }
 

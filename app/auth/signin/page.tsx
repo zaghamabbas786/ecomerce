@@ -8,6 +8,8 @@ export const metadata: Metadata = {
   description: 'Sign in to your account',
 };
 
+export const dynamic = 'force-dynamic';
+
 export default function SignInPage() {
   return (
     <div className="container mx-auto px-4 py-16">

@@ -46,13 +46,15 @@ export async function updateProduct(id: string, data: unknown) {
 
     await connectDB();
 
+    // Create update object with slug if title is being updated
+    const updateData: any = { ...validated };
     if (validated.title) {
-      validated.slug = slugify(validated.title);
+      updateData.slug = slugify(validated.title);
     }
 
     const product = await Product.findByIdAndUpdate(
       id,
-      { $set: validated },
+      { $set: updateData },
       { new: true, runValidators: true }
     );
 
