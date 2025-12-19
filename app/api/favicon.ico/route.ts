@@ -2,7 +2,8 @@ import { NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
 
-// Serve the icon.svg as favicon.ico to prevent 404 errors
+// Handle /favicon.ico requests to prevent 404 errors
+// Browsers automatically request this, so we serve the icon.svg
 export async function GET() {
   try {
     const iconPath = path.join(process.cwd(), 'app', 'icon.svg');
@@ -15,7 +16,7 @@ export async function GET() {
       },
     });
   } catch (error) {
-    // If icon.svg doesn't exist, return 204 No Content
+    // Return 204 No Content if icon doesn't exist
     return new NextResponse(null, { status: 204 });
   }
 }
