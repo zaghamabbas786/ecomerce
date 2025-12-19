@@ -1,8 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { connectDB } from '@/lib/db';
-import Product from '@/models/Product';
-import Order from '@/models/Order';
-import User from '@/models/User';
 import { formatPrice } from '@/lib/utils';
 import { Package, ShoppingBag, Users, DollarSign } from 'lucide-react';
 
@@ -11,16 +8,20 @@ export const metadata = {
 };
 
 async function getDashboardStats() {
-  await connectDB();
+  const supabase = await connectDB();
 
-  const [productCount, orderCount, userCount, orders] = await Promise.all([
-    Product.countDocuments(),
-    Order.countDocuments(),
-    User.countDocuments({ role: 'user' }),
-    Order.find().select('total').lean(),
+  const [productsResult, ordersResult, usersResult, ordersDataResult] = await Promise.all([
+    supabase.from('products').select('id', { count: 'exact', head: true }),
+    supabase.from('orders').select('id', { count: 'exact', head: true }),
+    supabase.from('users').select('id', { count: 'exact', head: true }).eq('role', 'user'),
+    supabase.from('orders').select('total'),
   ]);
 
-  const totalRevenue = orders.reduce((sum, order) => sum + order.total, 0);
+  const productCount = productsResult.count || 0;
+  const orderCount = ordersResult.count || 0;
+  const userCount = usersResult.count || 0;
+  const orders = ordersDataResult.data || [];
+  const totalRevenue = orders.reduce((sum: number, order: any) => sum + (Number(order.total) || 0), 0);
 
   return {
     productCount,
