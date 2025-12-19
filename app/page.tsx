@@ -27,7 +27,7 @@ export default async function HomePage() {
   return (
     <div>
       {/* Hero Section */}
-      {hero && (
+      {hero ? (
         <section className="relative h-[600px] flex items-center justify-center overflow-hidden">
           {hero.image && (
             <Image
@@ -55,6 +55,24 @@ export default async function HomePage() {
                 </Link>
               </Button>
             )}
+          </div>
+          <div className="absolute inset-0 bg-black/40" />
+        </section>
+      ) : (
+        <section className="relative h-[600px] flex items-center justify-center overflow-hidden bg-gradient-to-br from-gray-900 to-gray-700">
+          <div className="relative z-10 text-center text-white px-4">
+            <h1 className="text-5xl md:text-7xl font-bold mb-4 drop-shadow-lg">
+              Welcome to Fashion Store
+            </h1>
+            <p className="text-xl md:text-2xl mb-8 drop-shadow-md">
+              Discover the latest trends in fashion
+            </p>
+            <Button size="lg" asChild>
+              <Link href="/shop">
+                Shop Now
+                <ArrowRight className="ml-2 h-5 w-5" />
+              </Link>
+            </Button>
           </div>
           <div className="absolute inset-0 bg-black/40" />
         </section>
@@ -107,21 +125,23 @@ export default async function HomePage() {
         </section>
       )}
 
-      {/* CTA Section */}
-      <section className="container mx-auto px-4 py-16 text-center">
-        <h2 className="text-4xl font-bold mb-4">
-          New Season, New Style
-        </h2>
-        <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
-          Discover the latest trends in fashion and elevate your wardrobe with our curated collection.
-        </p>
-        <Button size="lg" asChild>
-          <Link href="/shop">
-            Shop Now
-            <ArrowRight className="ml-2 h-5 w-5" />
-          </Link>
-        </Button>
-      </section>
+      {/* CTA Section - Only show if hero exists */}
+      {hero && (
+        <section className="container mx-auto px-4 py-16 text-center">
+          <h2 className="text-4xl font-bold mb-4">
+            New Season, New Style
+          </h2>
+          <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
+            Discover the latest trends in fashion and elevate your wardrobe with our curated collection.
+          </p>
+          <Button size="lg" asChild>
+            <Link href="/shop">
+              Shop Now
+              <ArrowRight className="ml-2 h-5 w-5" />
+            </Link>
+          </Button>
+        </section>
+      )}
     </div>
   );
 }
