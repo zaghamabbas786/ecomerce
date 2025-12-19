@@ -39,7 +39,7 @@ export function AddToCartForm({ product }: AddToCartFormProps) {
     setLoading(true);
 
     const result = await addToCartAction({
-      productId: product._id,
+      productId: product.id || product._id,
       title: product.title,
       slug: product.slug,
       price: product.price,

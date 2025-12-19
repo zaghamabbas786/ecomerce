@@ -1,8 +1,21 @@
 import { config } from 'dotenv';
 import { resolve } from 'path';
 
-// Load environment variables from .env.local
-config({ path: resolve(process.cwd(), '.env.local') });
+// Load environment variables from .env.local FIRST, before any other imports
+const envPath = resolve(process.cwd(), '.env.local');
+config({ path: envPath });
+
+// Also try .env as fallback
+config({ path: resolve(process.cwd(), '.env') });
+
+// Verify required env vars are loaded
+if (!process.env.NEXT_PUBLIC_SUPABASE_URL) {
+  console.error('❌ Error: NEXT_PUBLIC_SUPABASE_URL not found in .env.local');
+  console.error('📝 Please add your Supabase credentials to .env.local:');
+  console.error('   NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co');
+  console.error('   NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key');
+  process.exit(1);
+}
 
 import { connectDB } from '../lib/db';
 import bcrypt from 'bcryptjs';

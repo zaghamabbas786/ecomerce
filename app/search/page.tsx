@@ -61,8 +61,8 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
               {products.map((product: any) => (
                 <ProductCard
-                  key={product._id}
-                  id={product._id}
+                  key={product.id || product._id}
+                  id={product.id || product._id}
                   title={product.title}
                   slug={product.slug}
                   price={product.price}

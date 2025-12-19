@@ -43,7 +43,7 @@ export default async function CollectionPage({
   const collection = collectionResult.collection;
 
   const productsResult = await getProducts({
-    collectionId: collection._id,
+    collectionId: collection.id || collection._id,
     page: currentPage,
     limit: 12,
   });
@@ -62,6 +62,7 @@ export default async function CollectionPage({
               alt={collection.name}
               fill
               className="object-cover"
+              unoptimized={collection.image?.includes('unsplash.com')}
             />
             <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
               <h1 className="text-5xl font-bold text-white">
@@ -92,8 +93,8 @@ export default async function CollectionPage({
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {products.map((product: any) => (
               <ProductCard
-                key={product._id}
-                id={product._id}
+                key={product.id || product._id}
+                id={product.id || product._id}
                 title={product.title}
                 slug={product.slug}
                 price={product.price}

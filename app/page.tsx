@@ -36,6 +36,7 @@ export default async function HomePage() {
               fill
               className="object-cover"
               priority
+              unoptimized={hero.image?.includes('unsplash.com')}
             />
           )}
           <div className="relative z-10 text-center text-white px-4">
@@ -90,7 +91,7 @@ export default async function HomePage() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {collections.slice(0, 3).map((collection: any) => (
               <CollectionCard
-                key={collection._id}
+                key={collection.id || collection._id}
                 name={collection.name}
                 slug={collection.slug}
                 image={collection.image}
@@ -113,12 +114,12 @@ export default async function HomePage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {featuredProducts.map((product: any) => (
               <ProductCard
-                key={product._id}
-                id={product._id}
+                key={product.id || product._id}
+                id={product.id || product._id}
                 title={product.title}
                 slug={product.slug}
                 price={product.price}
-                image={product.images[0]}
+                image={product.images?.[0] || product.images?.[0] || ''}
               />
             ))}
           </div>

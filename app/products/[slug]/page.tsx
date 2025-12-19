@@ -39,7 +39,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
     limit: 4,
   });
   const relatedProducts = (('products' in relatedResult ? relatedResult.products : null) || []).filter(
-    (p: any) => p._id !== product._id
+    (p: any) => (p.id || p._id) !== (product.id || product._id)
   );
 
   return (
@@ -54,6 +54,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
               fill
               className="object-cover"
               priority
+              unoptimized={product.images[0]?.includes('unsplash.com')}
             />
           </div>
           {product.images.length > 1 && (
@@ -68,6 +69,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
                     alt={`${product.title} ${index + 2}`}
                     fill
                     className="object-cover"
+                    unoptimized={image?.includes('unsplash.com')}
                   />
                 </div>
               ))}
@@ -106,8 +108,8 @@ export default async function ProductPage({ params }: ProductPageProps) {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {relatedProducts.map((product: any) => (
               <ProductCard
-                key={product._id}
-                id={product._id}
+                key={product.id || product._id}
+                id={product.id || product._id}
                 title={product.title}
                 slug={product.slug}
                 price={product.price}
