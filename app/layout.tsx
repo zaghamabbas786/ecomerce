@@ -17,6 +17,9 @@ export const metadata: Metadata = {
   },
   description: 'Discover the latest trends in fashion clothing and accessories at affordable prices.',
   keywords: ['fashion', 'clothing', 'store', 'online shopping', 'apparel'],
+  icons: {
+    icon: '/favicon.ico',
+  },
 };
 
 export default function RootLayout({
