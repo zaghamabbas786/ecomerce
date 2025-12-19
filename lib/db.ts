@@ -1,62 +1,43 @@
-import mongoose from 'mongoose';
+import { createClient } from '@supabase/supabase-js';
 
-interface MongooseCache {
-  conn: typeof mongoose | null;
-  promise: Promise<typeof mongoose> | null;
+// Supabase connection
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+if (!supabaseUrl) {
+  throw new Error('Please define NEXT_PUBLIC_SUPABASE_URL environment variable');
 }
 
-declare global {
-  var mongoose: MongooseCache;
+// Use service role key if available (for server-side operations), otherwise use anon key
+const supabaseKey = supabaseServiceKey || supabaseAnonKey;
+
+if (!supabaseKey) {
+  throw new Error('Please define either SUPABASE_SERVICE_ROLE_KEY or NEXT_PUBLIC_SUPABASE_ANON_KEY environment variable');
 }
 
-let cached: MongooseCache = global.mongoose || { conn: null, promise: null };
+// Create Supabase client with service role key (preferred) or anon key for server-side operations
+export const supabase = createClient(supabaseUrl, supabaseKey, {
+  auth: {
+    autoRefreshToken: false,
+    persistSession: false,
+  },
+});
 
-if (!global.mongoose) {
-  global.mongoose = cached;
-}
-
+// Connection test function
 export async function connectDB() {
-  const MONGODB_URI = process.env.MONGODB_URI;
-
-  if (!MONGODB_URI) {
-    throw new Error('Please define the MONGODB_URI environment variable inside .env.local');
-  }
-
-  if (cached.conn) {
-    return cached.conn;
-  }
-
-  if (!cached.promise) {
-    const opts = {
-      bufferCommands: false,
-      serverSelectionTimeoutMS: 5000, // 5 seconds
-      socketTimeoutMS: 30000, // 30 seconds
-      connectTimeoutMS: 5000, // 5 seconds
-      maxPoolSize: 10,
-      minPoolSize: 1,
-    };
-
-    // Add a timeout wrapper to fail faster
-    const timeoutPromise = new Promise((_, reject) => {
-      setTimeout(() => {
-        reject(new Error('Database connection timeout'));
-      }, 8000); // 8 second total timeout
-    });
-
-    cached.promise = Promise.race([
-      mongoose.connect(MONGODB_URI, opts),
-      timeoutPromise,
-    ]) as Promise<typeof mongoose>;
-  }
-
   try {
-    cached.conn = await cached.promise;
-  } catch (e) {
-    cached.promise = null;
-    console.error('MongoDB connection error:', e);
-    throw e;
+    // Test connection by querying a simple table
+    const { error } = await supabase.from('users').select('id').limit(1);
+    
+    if (error && error.code !== 'PGRST116') {
+      // PGRST116 is "relation does not exist" - table might not be created yet
+      console.warn('Database connection test:', error.message);
+    }
+    
+    return supabase;
+  } catch (error) {
+    console.error('Database connection error:', error);
+    throw error;
   }
-
-  return cached.conn;
 }
-

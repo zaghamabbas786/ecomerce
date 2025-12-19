@@ -1,7 +1,6 @@
 import NextAuth, { DefaultSession } from 'next-auth';
 import Credentials from 'next-auth/providers/credentials';
 import { connectDB } from '@/lib/db';
-import User from '@/models/User';
 import bcrypt from 'bcryptjs';
 import { loginSchema } from '@/lib/validations';
 
@@ -34,13 +33,15 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       async authorize(credentials) {
         try {
           const validated = loginSchema.parse(credentials);
-          await connectDB();
+          const supabase = await connectDB();
 
-          const user = await User.findOne({ email: validated.email }).select(
-            '+password'
-          );
+          const { data: user, error } = await supabase
+            .from('users')
+            .select('id, email, name, password, role, image')
+            .eq('email', validated.email.toLowerCase())
+            .single();
 
-          if (!user || !user.password) {
+          if (error || !user || !user.password) {
             return null;
           }
 
@@ -54,7 +55,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           }
 
           return {
-            id: user._id.toString(),
+            id: user.id,
             email: user.email,
             name: user.name,
             role: user.role,
@@ -83,4 +84,3 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     },
   },
 });
-

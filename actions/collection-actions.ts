@@ -5,27 +5,40 @@ import { connectDB } from '@/lib/db';
 import { requireAdmin } from '@/lib/auth-helpers';
 import { handleError } from '@/lib/errors';
 import { collectionSchema, collectionUpdateSchema } from '@/lib/validations';
-import Collection from '@/models/Collection';
+import { toCamelCase, toSnakeCase } from '@/lib/db-helpers';
 
 export async function createCollection(data: unknown) {
   try {
     await requireAdmin();
     const validated = collectionSchema.parse(data);
 
-    await connectDB();
+    const supabase = await connectDB();
 
-    const existingCollection = await Collection.findOne({ slug: validated.slug });
+    const { data: existingCollection } = await supabase
+      .from('collections')
+      .select('id')
+      .eq('slug', validated.slug)
+      .single();
+
     if (existingCollection) {
       return { error: 'A collection with this slug already exists' };
     }
 
-    const collection = await Collection.create(validated);
+    const collectionData = toSnakeCase(validated);
+
+    const { data: collection, error } = await supabase
+      .from('collections')
+      .insert(collectionData)
+      .select()
+      .single();
+
+    if (error) throw error;
 
     revalidatePath('/admin/collections');
     revalidatePath('/collections');
     revalidatePath('/');
 
-    return { success: true, collection: JSON.parse(JSON.stringify(collection)) };
+    return { success: true, collection: toCamelCase(collection) };
   } catch (error) {
     return handleError(error);
   }
@@ -36,14 +49,18 @@ export async function updateCollection(id: string, data: unknown) {
     await requireAdmin();
     const validated = collectionUpdateSchema.parse(data);
 
-    await connectDB();
+    const supabase = await connectDB();
 
-    const collection = await Collection.findByIdAndUpdate(
-      id,
-      { $set: validated },
-      { new: true, runValidators: true }
-    );
+    const snakeData = toSnakeCase(validated);
 
+    const { data: collection, error } = await supabase
+      .from('collections')
+      .update(snakeData)
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) throw error;
     if (!collection) {
       return { error: 'Collection not found' };
     }
@@ -53,7 +70,7 @@ export async function updateCollection(id: string, data: unknown) {
     revalidatePath(`/collections/${collection.slug}`);
     revalidatePath('/');
 
-    return { success: true, collection: JSON.parse(JSON.stringify(collection)) };
+    return { success: true, collection: toCamelCase(collection) };
   } catch (error) {
     return handleError(error);
   }
@@ -63,13 +80,14 @@ export async function deleteCollection(id: string) {
   try {
     await requireAdmin();
 
-    await connectDB();
+    const supabase = await connectDB();
 
-    const collection = await Collection.findByIdAndDelete(id);
+    const { error } = await supabase
+      .from('collections')
+      .delete()
+      .eq('id', id);
 
-    if (!collection) {
-      return { error: 'Collection not found' };
-    }
+    if (error) throw error;
 
     revalidatePath('/admin/collections');
     revalidatePath('/collections');
@@ -83,16 +101,21 @@ export async function deleteCollection(id: string) {
 
 export async function getCollections(featured?: boolean) {
   try {
-    await connectDB();
+    const supabase = await connectDB();
 
-    const filter: any = {};
+    let query = supabase.from('collections').select('*');
+
     if (featured !== undefined) {
-      filter.featured = featured;
+      query = query.eq('featured', featured);
     }
 
-    const collections = await Collection.find(filter).sort({ createdAt: -1 }).lean();
+    query = query.order('created_at', { ascending: false });
 
-    return { collections: JSON.parse(JSON.stringify(collections)) };
+    const { data: collections, error } = await query;
+
+    if (error) throw error;
+
+    return { collections: collections ? collections.map(toCamelCase) : [] };
   } catch (error) {
     return handleError(error);
   }
@@ -100,15 +123,20 @@ export async function getCollections(featured?: boolean) {
 
 export async function getCollectionBySlug(slug: string) {
   try {
-    await connectDB();
+    const supabase = await connectDB();
 
-    const collection = await Collection.findOne({ slug }).lean();
+    const { data: collection, error } = await supabase
+      .from('collections')
+      .select('*')
+      .eq('slug', slug)
+      .single();
 
+    if (error) throw error;
     if (!collection) {
       return { error: 'Collection not found' };
     }
 
-    return { collection: JSON.parse(JSON.stringify(collection)) };
+    return { collection: toCamelCase(collection) };
   } catch (error) {
     return handleError(error);
   }
@@ -116,17 +144,21 @@ export async function getCollectionBySlug(slug: string) {
 
 export async function getCollectionById(id: string) {
   try {
-    await connectDB();
+    const supabase = await connectDB();
 
-    const collection = await Collection.findById(id).lean();
+    const { data: collection, error } = await supabase
+      .from('collections')
+      .select('*')
+      .eq('id', id)
+      .single();
 
+    if (error) throw error;
     if (!collection) {
       return { error: 'Collection not found' };
     }
 
-    return { collection: JSON.parse(JSON.stringify(collection)) };
+    return { collection: toCamelCase(collection) };
   } catch (error) {
     return handleError(error);
   }
 }
-

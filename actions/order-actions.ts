@@ -5,8 +5,7 @@ import { connectDB } from '@/lib/db';
 import { requireAuth, requireAdmin } from '@/lib/auth-helpers';
 import { handleError } from '@/lib/errors';
 import { orderSchema } from '@/lib/validations';
-import Order from '@/models/Order';
-import Product from '@/models/Product';
+import { toCamelCase, toSnakeCase } from '@/lib/db-helpers';
 
 function generateOrderNumber(): string {
   const timestamp = Date.now().toString(36).toUpperCase();
@@ -17,7 +16,7 @@ function generateOrderNumber(): string {
 export async function createOrder(data: unknown) {
   try {
     const validated = orderSchema.parse(data);
-    await connectDB();
+    const supabase = await connectDB();
 
     // Calculate totals
     let subtotal = 0;
@@ -25,14 +24,24 @@ export async function createOrder(data: unknown) {
       subtotal += item.price * item.quantity;
 
       // Update product stock
-      const product = await Product.findById(item.productId);
-      if (product) {
-        const variant = product.variants.find(
-          (v: any) => v.size === item.size && v.color === item.color
+      const { data: product, error: productError } = await supabase
+        .from('products')
+        .select('variants')
+        .eq('id', item.productId)
+        .single();
+
+      if (product && !productError) {
+        const variants = product.variants as Array<{ size: string; color: string; stock: number }>;
+        const variant = variants.find(
+          (v) => v.size === item.size && v.color === item.color
         );
         if (variant && variant.stock >= item.quantity) {
           variant.stock -= item.quantity;
-          await product.save();
+          // Update the product with new variants
+          await supabase
+            .from('products')
+            .update({ variants })
+            .eq('id', item.productId);
         }
       }
     }
@@ -41,7 +50,7 @@ export async function createOrder(data: unknown) {
     const shippingCost = subtotal > 100 ? 0 : 10;
     const total = subtotal + tax + shippingCost;
 
-    let userId;
+    let userId: string | undefined;
     try {
       const session = await requireAuth();
       userId = session.user.id;
@@ -50,24 +59,32 @@ export async function createOrder(data: unknown) {
       userId = undefined;
     }
 
-    const order = await Order.create({
-      userId,
-      orderNumber: generateOrderNumber(),
+    const orderData = {
+      user_id: userId || null,
+      order_number: generateOrderNumber(),
       items: validated.items,
-      shippingAddress: validated.shippingAddress,
-      paymentMethod: validated.paymentMethod,
+      shipping_address: validated.shippingAddress,
+      payment_method: validated.paymentMethod,
       subtotal,
       tax,
-      shippingCost,
+      shipping_cost: shippingCost,
       total,
-    });
+    };
+
+    const { data: order, error } = await supabase
+      .from('orders')
+      .insert(orderData)
+      .select()
+      .single();
+
+    if (error) throw error;
 
     revalidatePath('/admin/orders');
     if (userId) {
       revalidatePath('/account/orders');
     }
 
-    return { success: true, order: JSON.parse(JSON.stringify(order)) };
+    return { success: true, order: toCamelCase(order) };
   } catch (error) {
     return handleError(error);
   }
@@ -79,14 +96,16 @@ export async function updateOrderStatus(
 ) {
   try {
     await requireAdmin();
-    await connectDB();
+    const supabase = await connectDB();
 
-    const order = await Order.findByIdAndUpdate(
-      orderId,
-      { $set: { orderStatus: status } },
-      { new: true }
-    );
+    const { data: order, error } = await supabase
+      .from('orders')
+      .update({ order_status: status })
+      .eq('id', orderId)
+      .select()
+      .single();
 
+    if (error) throw error;
     if (!order) {
       return { error: 'Order not found' };
     }
@@ -94,7 +113,7 @@ export async function updateOrderStatus(
     revalidatePath('/admin/orders');
     revalidatePath(`/admin/orders/${orderId}`);
 
-    return { success: true, order: JSON.parse(JSON.stringify(order)) };
+    return { success: true, order: toCamelCase(order) };
   } catch (error) {
     return handleError(error);
   }
@@ -108,34 +127,34 @@ export async function getOrders(params?: {
 }) {
   try {
     await requireAdmin();
-    await connectDB();
+    const supabase = await connectDB();
 
     const page = params?.page || 1;
     const limit = params?.limit || 20;
-    const skip = (page - 1) * limit;
+    const from = (page - 1) * limit;
+    const to = from + limit - 1;
 
-    const filter: any = {};
+    let query = supabase
+      .from('orders')
+      .select('*, users!orders_user_id_fkey(id, name, email)', { count: 'exact' });
+
     if (params?.status) {
-      filter.orderStatus = params.status;
+      query = query.eq('order_status', params.status);
     }
     if (params?.userId) {
-      filter.userId = params.userId;
+      query = query.eq('user_id', params.userId);
     }
 
-    const [orders, total] = await Promise.all([
-      Order.find(filter)
-        .sort({ createdAt: -1 })
-        .skip(skip)
-        .limit(limit)
-        .populate('userId', 'name email')
-        .lean(),
-      Order.countDocuments(filter),
-    ]);
+    query = query.order('created_at', { ascending: false });
+
+    const { data: orders, error, count } = await query.range(from, to);
+
+    if (error) throw error;
 
     return {
-      orders: JSON.parse(JSON.stringify(orders)),
-      total,
-      pages: Math.ceil(total / limit),
+      orders: orders ? orders.map(toCamelCase) : [],
+      total: count || 0,
+      pages: Math.ceil((count || 0) / limit),
       currentPage: page,
     };
   } catch (error) {
@@ -145,12 +164,15 @@ export async function getOrders(params?: {
 
 export async function getOrderById(orderId: string) {
   try {
-    await connectDB();
+    const supabase = await connectDB();
 
-    const order = await Order.findById(orderId)
-      .populate('userId', 'name email')
-      .lean();
+    const { data: order, error } = await supabase
+      .from('orders')
+      .select('*, users!orders_user_id_fkey(id, name, email)')
+      .eq('id', orderId)
+      .single();
 
+    if (error) throw error;
     if (!order) {
       return { error: 'Order not found' };
     }
@@ -160,7 +182,7 @@ export async function getOrderById(orderId: string) {
       const session = await requireAuth();
       if (
         session.user.role !== 'admin' &&
-        order.userId?.toString() !== session.user.id
+        order.user_id !== session.user.id
       ) {
         return { error: 'Unauthorized' };
       }
@@ -168,7 +190,7 @@ export async function getOrderById(orderId: string) {
       return { error: 'Unauthorized' };
     }
 
-    return { order: JSON.parse(JSON.stringify(order)) };
+    return { order: toCamelCase(order) };
   } catch (error) {
     return handleError(error);
   }
@@ -177,13 +199,17 @@ export async function getOrderById(orderId: string) {
 export async function getUserOrders() {
   try {
     const session = await requireAuth();
-    await connectDB();
+    const supabase = await connectDB();
 
-    const orders = await Order.find({ userId: session.user.id })
-      .sort({ createdAt: -1 })
-      .lean();
+    const { data: orders, error } = await supabase
+      .from('orders')
+      .select('*')
+      .eq('user_id', session.user.id)
+      .order('created_at', { ascending: false });
 
-    return { orders: JSON.parse(JSON.stringify(orders)) };
+    if (error) throw error;
+
+    return { orders: orders ? orders.map(toCamelCase) : [] };
   } catch (error) {
     return handleError(error);
   }
@@ -191,17 +217,21 @@ export async function getUserOrders() {
 
 export async function getOrderByNumber(orderNumber: string) {
   try {
-    await connectDB();
+    const supabase = await connectDB();
 
-    const order = await Order.findOne({ orderNumber }).lean();
+    const { data: order, error } = await supabase
+      .from('orders')
+      .select('*')
+      .eq('order_number', orderNumber)
+      .single();
 
+    if (error) throw error;
     if (!order) {
       return { error: 'Order not found' };
     }
 
-    return { order: JSON.parse(JSON.stringify(order)) };
+    return { order: toCamelCase(order) };
   } catch (error) {
     return handleError(error);
   }
 }
-

@@ -5,9 +5,7 @@ import { connectDB } from '@/lib/db';
 import { requireAdmin } from '@/lib/auth-helpers';
 import { handleError } from '@/lib/errors';
 import { heroSectionSchema, bannerSchema, siteSettingsSchema } from '@/lib/validations';
-import HeroSection from '@/models/HeroSection';
-import Banner from '@/models/Banner';
-import SiteSettings from '@/models/SiteSettings';
+import { toCamelCase, toSnakeCase } from '@/lib/db-helpers';
 
 // Hero Section Actions
 export async function updateHeroSection(data: unknown) {
@@ -15,29 +13,48 @@ export async function updateHeroSection(data: unknown) {
     await requireAdmin();
     const validated = heroSectionSchema.parse(data);
 
-    await connectDB();
+    const supabase = await connectDB();
 
     // Deactivate all other hero sections
-    await HeroSection.updateMany({}, { $set: { active: false } });
+    await supabase
+      .from('hero_sections')
+      .update({ active: false });
 
     // Check if a hero section exists
-    const existing = await HeroSection.findOne();
+    const { data: existing } = await supabase
+      .from('hero_sections')
+      .select('id')
+      .limit(1)
+      .single();
     
+    const heroData = toSnakeCase({ ...validated, active: true });
+
     let heroSection;
     if (existing) {
-      heroSection = await HeroSection.findByIdAndUpdate(
-        existing._id,
-        { $set: { ...validated, active: true } },
-        { new: true }
-      );
+      const { data, error } = await supabase
+        .from('hero_sections')
+        .update(heroData)
+        .eq('id', existing.id)
+        .select()
+        .single();
+      
+      if (error) throw error;
+      heroSection = data;
     } else {
-      heroSection = await HeroSection.create({ ...validated, active: true });
+      const { data, error } = await supabase
+        .from('hero_sections')
+        .insert(heroData)
+        .select()
+        .single();
+      
+      if (error) throw error;
+      heroSection = data;
     }
 
     revalidatePath('/');
     revalidatePath('/admin/cms');
 
-    return { success: true, heroSection: JSON.parse(JSON.stringify(heroSection)) };
+    return { success: true, heroSection: toCamelCase(heroSection) };
   } catch (error) {
     return handleError(error);
   }
@@ -45,15 +62,20 @@ export async function updateHeroSection(data: unknown) {
 
 export async function getActiveHeroSection() {
   try {
-    await connectDB();
+    const supabase = await connectDB();
 
-    const heroSection = await HeroSection.findOne({ active: true }).lean();
+    const { data: heroSection, error } = await supabase
+      .from('hero_sections')
+      .select('*')
+      .eq('active', true)
+      .single();
 
-    if (!heroSection) {
+    if (error && error.code !== 'PGRST116') {
+      // PGRST116 is "no rows returned" - not an error, just no active hero
       return { heroSection: null };
     }
 
-    return { heroSection: JSON.parse(JSON.stringify(heroSection)) };
+    return { heroSection: heroSection ? toCamelCase(heroSection) : null };
   } catch (error) {
     return handleError(error);
   }
@@ -65,20 +87,32 @@ export async function createBanner(data: unknown) {
     await requireAdmin();
     const validated = bannerSchema.parse(data);
 
-    await connectDB();
+    const supabase = await connectDB();
 
-    const maxOrder = await Banner.findOne().sort({ order: -1 }).select('order');
-    const order = maxOrder ? maxOrder.order + 1 : 0;
+    // Get max order
+    const { data: maxOrderBanner } = await supabase
+      .from('banners')
+      .select('order')
+      .order('order', { ascending: false })
+      .limit(1)
+      .single();
 
-    const banner = await Banner.create({
-      ...validated,
-      order,
-    });
+    const order = maxOrderBanner?.order !== undefined ? maxOrderBanner.order + 1 : 0;
+
+    const bannerData = toSnakeCase({ ...validated, order });
+
+    const { data: banner, error } = await supabase
+      .from('banners')
+      .insert(bannerData)
+      .select()
+      .single();
+
+    if (error) throw error;
 
     revalidatePath('/');
     revalidatePath('/admin/cms');
 
-    return { success: true, banner: JSON.parse(JSON.stringify(banner)) };
+    return { success: true, banner: toCamelCase(banner) };
   } catch (error) {
     return handleError(error);
   }
@@ -89,14 +123,18 @@ export async function updateBanner(id: string, data: unknown) {
     await requireAdmin();
     const validated = bannerSchema.parse(data);
 
-    await connectDB();
+    const supabase = await connectDB();
 
-    const banner = await Banner.findByIdAndUpdate(
-      id,
-      { $set: validated },
-      { new: true }
-    );
+    const bannerData = toSnakeCase(validated);
 
+    const { data: banner, error } = await supabase
+      .from('banners')
+      .update(bannerData)
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) throw error;
     if (!banner) {
       return { error: 'Banner not found' };
     }
@@ -104,7 +142,7 @@ export async function updateBanner(id: string, data: unknown) {
     revalidatePath('/');
     revalidatePath('/admin/cms');
 
-    return { success: true, banner: JSON.parse(JSON.stringify(banner)) };
+    return { success: true, banner: toCamelCase(banner) };
   } catch (error) {
     return handleError(error);
   }
@@ -113,13 +151,14 @@ export async function updateBanner(id: string, data: unknown) {
 export async function deleteBanner(id: string) {
   try {
     await requireAdmin();
-    await connectDB();
+    const supabase = await connectDB();
 
-    const banner = await Banner.findByIdAndDelete(id);
+    const { error } = await supabase
+      .from('banners')
+      .delete()
+      .eq('id', id);
 
-    if (!banner) {
-      return { error: 'Banner not found' };
-    }
+    if (error) throw error;
 
     revalidatePath('/');
     revalidatePath('/admin/cms');
@@ -132,13 +171,17 @@ export async function deleteBanner(id: string) {
 
 export async function getActiveBanners() {
   try {
-    await connectDB();
+    const supabase = await connectDB();
 
-    const banners = await Banner.find({ active: true })
-      .sort({ order: 1 })
-      .lean();
+    const { data: banners, error } = await supabase
+      .from('banners')
+      .select('*')
+      .eq('active', true)
+      .order('order', { ascending: true });
 
-    return { banners: JSON.parse(JSON.stringify(banners)) };
+    if (error) throw error;
+
+    return { banners: banners ? banners.map(toCamelCase) : [] };
   } catch (error) {
     return handleError(error);
   }
@@ -147,11 +190,16 @@ export async function getActiveBanners() {
 export async function getAllBanners() {
   try {
     await requireAdmin();
-    await connectDB();
+    const supabase = await connectDB();
 
-    const banners = await Banner.find().sort({ order: 1 }).lean();
+    const { data: banners, error } = await supabase
+      .from('banners')
+      .select('*')
+      .order('order', { ascending: true });
 
-    return { banners: JSON.parse(JSON.stringify(banners)) };
+    if (error) throw error;
+
+    return { banners: banners ? banners.map(toCamelCase) : [] };
   } catch (error) {
     return handleError(error);
   }
@@ -163,25 +211,43 @@ export async function updateSiteSettings(data: unknown) {
     await requireAdmin();
     const validated = siteSettingsSchema.parse(data);
 
-    await connectDB();
+    const supabase = await connectDB();
 
-    const existing = await SiteSettings.findOne();
+    // Check if settings exist
+    const { data: existing } = await supabase
+      .from('site_settings')
+      .select('id')
+      .limit(1)
+      .single();
     
+    const settingsData = toSnakeCase(validated);
+
     let settings;
     if (existing) {
-      settings = await SiteSettings.findByIdAndUpdate(
-        existing._id,
-        { $set: validated },
-        { new: true }
-      );
+      const { data, error } = await supabase
+        .from('site_settings')
+        .update(settingsData)
+        .eq('id', existing.id)
+        .select()
+        .single();
+      
+      if (error) throw error;
+      settings = data;
     } else {
-      settings = await SiteSettings.create(validated);
+      const { data, error } = await supabase
+        .from('site_settings')
+        .insert(settingsData)
+        .select()
+        .single();
+      
+      if (error) throw error;
+      settings = data;
     }
 
     revalidatePath('/');
     revalidatePath('/admin/settings');
 
-    return { success: true, settings: JSON.parse(JSON.stringify(settings)) };
+    return { success: true, settings: toCamelCase(settings) };
   } catch (error) {
     return handleError(error);
   }
@@ -189,20 +255,30 @@ export async function updateSiteSettings(data: unknown) {
 
 export async function getSiteSettings() {
   try {
-    await connectDB();
+    const supabase = await connectDB();
 
-    let settings = await SiteSettings.findOne().lean();
+    let { data: settings, error } = await supabase
+      .from('site_settings')
+      .select('*')
+      .limit(1)
+      .single();
 
-    if (!settings) {
-      // Create default settings
-      await SiteSettings.create({ siteName: 'Fashion Store' });
-      // Refetch with lean() to maintain consistent typing
-      settings = await SiteSettings.findOne().lean();
+    if (error && error.code === 'PGRST116') {
+      // No settings found, create default
+      const { data: newSettings, error: createError } = await supabase
+        .from('site_settings')
+        .insert({ site_name: 'Fashion Store' })
+        .select()
+        .single();
+      
+      if (createError) throw createError;
+      settings = newSettings;
+    } else if (error) {
+      throw error;
     }
 
-    return { settings: JSON.parse(JSON.stringify(settings)) };
+    return { settings: settings ? toCamelCase(settings) : null };
   } catch (error) {
     return handleError(error);
   }
 }
-

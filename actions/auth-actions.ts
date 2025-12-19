@@ -5,19 +5,24 @@ import { connectDB } from '@/lib/db';
 import { handleError } from '@/lib/errors';
 import { registerSchema, loginSchema, profileSchema } from '@/lib/validations';
 import { requireAuth } from '@/lib/auth-helpers';
-import User from '@/models/User';
 import bcrypt from 'bcryptjs';
 import { AuthError } from 'next-auth';
 import { revalidatePath } from 'next/cache';
+import { toCamelCase, toSnakeCase } from '@/lib/db-helpers';
 
 export async function register(data: unknown) {
   try {
     const validated = registerSchema.parse(data);
 
-    await connectDB();
+    const supabase = await connectDB();
 
     // Check if user already exists
-    const existingUser = await User.findOne({ email: validated.email });
+    const { data: existingUser } = await supabase
+      .from('users')
+      .select('id')
+      .eq('email', validated.email.toLowerCase())
+      .single();
+
     if (existingUser) {
       return { error: 'User with this email already exists' };
     }
@@ -26,14 +31,20 @@ export async function register(data: unknown) {
     const hashedPassword = await bcrypt.hash(validated.password, 10);
 
     // Create user
-    const user = await User.create({
-      name: validated.name,
-      email: validated.email,
-      password: hashedPassword,
-      role: 'user',
-    });
+    const { data: user, error } = await supabase
+      .from('users')
+      .insert({
+        name: validated.name,
+        email: validated.email.toLowerCase(),
+        password: hashedPassword,
+        role: 'user',
+      })
+      .select('id')
+      .single();
 
-    return { success: true, userId: user._id.toString() };
+    if (error) throw error;
+
+    return { success: true, userId: user.id };
   } catch (error) {
     return handleError(error);
   }
@@ -63,21 +74,25 @@ export async function updateProfile(data: unknown) {
     const session = await requireAuth();
     const validated = profileSchema.parse(data);
 
-    await connectDB();
+    const supabase = await connectDB();
 
-    const user = await User.findByIdAndUpdate(
-      session.user.id,
-      { $set: validated },
-      { new: true }
-    );
+    const snakeData = toSnakeCase(validated);
 
+    const { data: user, error } = await supabase
+      .from('users')
+      .update(snakeData)
+      .eq('id', session.user.id)
+      .select()
+      .single();
+
+    if (error) throw error;
     if (!user) {
       return { error: 'User not found' };
     }
 
     revalidatePath('/account');
 
-    return { success: true, user: JSON.parse(JSON.stringify(user)) };
+    return { success: true, user: toCamelCase(user) };
   } catch (error) {
     return handleError(error);
   }
@@ -87,17 +102,21 @@ export async function getProfile() {
   try {
     const session = await requireAuth();
 
-    await connectDB();
+    const supabase = await connectDB();
 
-    const user = await User.findById(session.user.id).lean();
+    const { data: user, error } = await supabase
+      .from('users')
+      .select('*')
+      .eq('id', session.user.id)
+      .single();
 
+    if (error) throw error;
     if (!user) {
       return { error: 'User not found' };
     }
 
-    return { user: JSON.parse(JSON.stringify(user)) };
+    return { user: toCamelCase(user) };
   } catch (error) {
     return handleError(error);
   }
 }
-
