@@ -54,7 +54,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
               fill
               className="object-cover"
               priority
-              unoptimized={product.images[0]?.includes('unsplash.com')}
+              quality={90}
             />
           </div>
           {product.images.length > 1 && (
@@ -69,7 +69,8 @@ export default async function ProductPage({ params }: ProductPageProps) {
                     alt={`${product.title} ${index + 2}`}
                     fill
                     className="object-cover"
-                    unoptimized={image?.includes('unsplash.com')}
+                    loading="lazy"
+                    quality={85}
                   />
                 </div>
               ))}

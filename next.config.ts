@@ -16,14 +16,14 @@ const nextConfig: NextConfig = {
         hostname: 'encrypted-tbn0.gstatic.com',
       },
     ],
-    // Add timeout and error handling for image optimization
-    minimumCacheTTL: 60,
+    // Extended cache TTL for better performance (1 year = 31536000 seconds)
+    minimumCacheTTL: 31536000,
+    // Enable modern image formats for better compression
+    formats: ['image/avif', 'image/webp'],
     dangerouslyAllowSVG: true,
     contentDispositionType: 'attachment',
     contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
-    // Disable image optimization for external images to prevent timeouts
-    unoptimized: false,
-    // Add device sizes for better performance
+    // Optimized device sizes for better performance
     deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
     imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
   },

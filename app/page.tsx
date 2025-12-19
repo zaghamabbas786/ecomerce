@@ -36,7 +36,7 @@ export default async function HomePage() {
               fill
               className="object-cover"
               priority
-              unoptimized={hero.image?.includes('unsplash.com')}
+              quality={90}
             />
           )}
           <div className="relative z-10 text-center text-white px-4">

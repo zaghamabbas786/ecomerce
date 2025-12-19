@@ -24,7 +24,7 @@ export function ProductCard({ id, title, slug, price, image }: ProductCardProps)
             fill
             className="object-cover transition-transform duration-300 group-hover:scale-105"
             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-            unoptimized={image?.includes('unsplash.com') || (image?.startsWith('http') && !image?.includes('cloudinary'))}
+            loading="lazy"
             onError={(e) => {
               // Fallback to placeholder if image fails to load
               const target = e.target as HTMLImageElement;

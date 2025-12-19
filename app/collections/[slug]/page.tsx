@@ -62,7 +62,8 @@ export default async function CollectionPage({
               alt={collection.name}
               fill
               className="object-cover"
-              unoptimized={collection.image?.includes('unsplash.com')}
+              loading="lazy"
+              quality={85}
             />
             <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
               <h1 className="text-5xl font-bold text-white">
