@@ -22,6 +22,7 @@ const nextConfig: NextConfig = {
       bodySizeLimit: '10mb',
     },
   },
+  turbopack: {},
   webpack: (config, { isServer }) => {
     // Ignore optional MongoDB dependencies
     if (isServer) {
